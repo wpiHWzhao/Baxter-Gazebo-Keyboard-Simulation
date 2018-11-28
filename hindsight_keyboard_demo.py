@@ -61,6 +61,8 @@ from baxter_core_msgs.srv import (
 )
 
 import baxter_interface
+from BayesianLearnerHindSight import BayesianLearnerHS
+
 
 class PickAndPlace(object):
     def __init__(self, limb, hover_distance = 0.15, verbose=True):
@@ -86,6 +88,10 @@ class PickAndPlace(object):
         self.current_robot_pose = None
         self.step = 0.02
         self._rs.enable()
+        
+        self.goal_set = {'g1':(0.6, 0.3265, 0.7825), 'g2':(0.6, -0.3265, 0.7825), 'g3':(0.9, -0.1265, 0.7825)}
+        self.init_s = ((0.7, 0.1, -0.129), 1.57)
+        self.learner = BayesianLearnerHS(self.goal_set, self.init_s)
 
     def move_to_start(self, start_angles=None):
         print("Moving the {0} arm to start pose...".format(self._limb_name))
@@ -153,6 +159,7 @@ class PickAndPlace(object):
         approach.position.z = approach.position.z + self._hover_distance
         joint_angles = self.ik_request(approach)
         self._guarded_move_to_joint_position(joint_angles)
+        #self.learner.Bayesian_inference((approach.position.x, approach.position.y, approach.position.z), 1.57)
 
     def _retract(self):
         # retrieve current pose from endpoint
@@ -202,6 +209,7 @@ class PickAndPlace(object):
         print("Current ee position ", self.current_robot_pose)
         joint_angles = self.ik_request(self.current_robot_pose)
         self._guarded_move_to_joint_position(joint_angles)
+        return (self.current_robot_pose.position.x, self.current_robot_pose.position.y, self.current_robot_pose.position.z)
 
     def key_down(self):
         # approach with a pose the hover-distance above the requested pose
@@ -209,6 +217,7 @@ class PickAndPlace(object):
         print("Current ee position ", self.current_robot_pose)
         joint_angles = self.ik_request(self.current_robot_pose)	
         self._guarded_move_to_joint_position(joint_angles)
+        return (self.current_robot_pose.position.x, self.current_robot_pose.position.y, self.current_robot_pose.position.z)
 
     def key_left(self):
         # approach with a pose the hover-distance above the requested pose
@@ -216,6 +225,7 @@ class PickAndPlace(object):
         print("Current ee position ", self.current_robot_pose)
         joint_angles = self.ik_request(self.current_robot_pose)
         self._guarded_move_to_joint_position(joint_angles)
+        return (self.current_robot_pose.position.x, self.current_robot_pose.position.y, self.current_robot_pose.position.z)
 
     def key_right(self):
         # approach with a pose the hover-distance above the requested pose
@@ -223,18 +233,21 @@ class PickAndPlace(object):
         print("Current ee position ", self.current_robot_pose)
         joint_angles = self.ik_request(self.current_robot_pose)
         self._guarded_move_to_joint_position(joint_angles)
+        return (self.current_robot_pose.position.x, self.current_robot_pose.position.y, self.current_robot_pose.position.z)
 
 
     def on_press(self,key):
     	print('{0} pressed'.format(key))
     	if key == Key.up:
-    		self.key_up()
+    		ns = self.key_up()
     	if key == Key.down:
-    		self.key_down()
+    		ns = self.key_down()
     	if key == Key.left:
-    		self.key_left()
+    		ns = self.key_left()
     	if key== Key.right:
-    		self.key_right()
+    		ns = self.key_right()
+    	
+    	self.learner.Bayesian_inference((ns, 1.57))
 
     def on_release(self,key):
     	if key == Key.esc:
@@ -244,11 +257,11 @@ class PickAndPlace(object):
        		pass
 
 
-def load_gazebo_models(table_pose=Pose(position=Point(x=1.0, y=0.0, z=0.0)),
+def load_gazebo_models(table_pose=Pose(position=Point(x=0.7, y=0.0, z=0.0)),
                        table_reference_frame="world",
-                       block_pose1=Pose(position=Point(x=0.9, y=0.3265, z=0.7825)),
-                       block_pose2=Pose(position=Point(x=0.9, y=-0.3265, z=0.7825)),
-                       block_pose3=Pose(position=Point(x=1.3, y=-0.1265, z=0.7825)),
+                       block_pose1=Pose(position=Point(x=0.6, y=0.3265, z=0.7825)),
+                       block_pose2=Pose(position=Point(x=0.6, y=-0.3265, z=0.7825)),
+                       block_pose3=Pose(position=Point(x=0.9, y=-0.1265, z=0.7825)),
                        block_reference_frame="world"):
     # Get Models' Path
     model_path = rospkg.RosPack().get_path('baxter_sim_examples')+"/models/"
