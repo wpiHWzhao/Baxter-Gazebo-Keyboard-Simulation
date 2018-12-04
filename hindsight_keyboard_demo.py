@@ -235,6 +235,21 @@ class PickAndPlace(object):
         self._guarded_move_to_joint_position(joint_angles)
         return (self.current_robot_pose.position.x, self.current_robot_pose.position.y, self.current_robot_pose.position.z)
 
+    def key_z_up(self):
+        # approach with a pose the hover-distance above the requested pose
+        self.current_robot_pose.position.z = self.current_robot_pose.position.z + self.step
+        print("Current ee position ", self.current_robot_pose)
+        joint_angles = self.ik_request(self.current_robot_pose)
+        self._guarded_move_to_joint_position(joint_angles)
+        return (self.current_robot_pose.position.x, self.current_robot_pose.position.y, self.current_robot_pose.position.z)
+
+    def key_z_down(self):
+        # approach with a pose the hover-distance above the requested pose
+        self.current_robot_pose.position.z = self.current_robot_pose.position.z - self.step
+        print("Current ee position ", self.current_robot_pose)
+        joint_angles = self.ik_request(self.current_robot_pose)
+        self._guarded_move_to_joint_position(joint_angles)
+        return (self.current_robot_pose.position.x, self.current_robot_pose.position.y, self.current_robot_pose.position.z)
 
     def on_press(self,key):
     	print('{0} pressed'.format(key))
@@ -246,6 +261,11 @@ class PickAndPlace(object):
     		ns = self.key_left()
     	if key== Key.right:
     		ns = self.key_right()
+    	if key == Key.shift_r:
+    		ns = self.key_z_up()
+    	if key == Key.ctrl_r:
+    		ns = self.key_z_down()
+
     	
     	self.learner.Bayesian_inference((ns, 1.57))
 
